@@ -2,7 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "leakhub",
   // Workers Assets configuration - replaces Pages' pages_build_output_dir
-  "assets": { "directory": "./dist" },
+  // "not_found_handling": "single-page-application" enables SPA routing
+  // so that /dashboard and other client-side routes serve index.html instead of 404
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
   // Required compatibility date for Workers runtime features
   "compatibility_date": "2025-06-05",
 }

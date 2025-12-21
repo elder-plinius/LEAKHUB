@@ -8,8 +8,6 @@ import App from "./App.tsx";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-console.log("Convex URL:", convex);
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ConvexAuthProvider client={convex}>
@@ -17,5 +15,5 @@ createRoot(document.getElementById("root")!).render(
         <App />
       </BrowserRouter>
     </ConvexAuthProvider>
-  </StrictMode>,
+  </StrictMode>
 );
