@@ -1,5 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "leakhub",
-  "pages_build_output_dir": "./dist",
+  // Workers Assets configuration - replaces Pages' pages_build_output_dir
+  "assets": { "directory": "./dist" },
+  // Required compatibility date for Workers runtime features
+  "compatibility_date": "2025-06-05",
 }

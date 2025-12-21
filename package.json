@@ -11,7 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "deploy": "npm run build && npx wrangler pages deploy",
+    "deploy": "npm run build && npx wrangler deploy",
     "cf-typegen": "npx wrangler types"
   },
   "dependencies": {
