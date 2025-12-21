@@ -6,6 +6,8 @@ import { Id } from "./_generated/dataModel";
 /**
  * Get all open (non-closed) requests from the database.
  * Returns requests with submitter names populated.
+ *
+ * OPTIMIZATION: Uses batch fetching to avoid N+1 query problem.
  */
 export const getOpenRequests = query({
   args: {},
@@ -37,27 +39,26 @@ export const getOpenRequests = query({
       .order("desc")
       .collect();
 
-    // Fetch submitter names
-    const requestsWithNames: Array<{
-      _id: Id<"requests">;
-      _creationTime: number;
-      targetName: string;
-      provider: string;
-      targetType: "model" | "app" | "tool" | "agent" | "plugin" | "custom";
-      targetUrl: string;
-      closed: boolean;
-      submittedBy: Id<"users">;
-      submitterName: string;
-      leaks: Array<Id<"leaks">>;
-    }> = [];
-
+    // Collect unique user IDs to batch fetch
+    const userIds = new Set<Id<"users">>();
     for (const request of requests) {
-      const user = await ctx.db.get(request.submittedBy);
-      requestsWithNames.push({
-        ...request,
-        submitterName: user?.name || "Unknown",
-      });
+      userIds.add(request.submittedBy);
     }
+
+    // Batch fetch all users at once
+    const userMap = new Map<Id<"users">, string>();
+    await Promise.all(
+      Array.from(userIds).map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        userMap.set(userId, user?.name || "Unknown");
+      }),
+    );
+
+    // Map requests with user names from the cached map
+    const requestsWithNames = requests.map((request) => ({
+      ...request,
+      submitterName: userMap.get(request.submittedBy) || "Unknown",
+    }));
 
     return requestsWithNames;
   },
@@ -274,6 +275,8 @@ export const closeRequest = mutation({
  * Uses full-text search to find matching requests.
  * Only returns open (non-closed) requests.
  * Returns up to 10 results.
+ *
+ * OPTIMIZATION: Uses batch fetching to avoid N+1 query problem.
  */
 export const searchRequests = query({
   args: {
@@ -312,26 +315,24 @@ export const searchRequests = query({
       )
       .take(10);
 
-    const requestsWithNames: Array<{
-      _id: Id<"requests">;
-      _creationTime: number;
-      targetName: string;
-      provider: string;
-      targetType: "model" | "app" | "tool" | "agent" | "plugin" | "custom";
-      targetUrl: string;
-      closed: boolean;
-      submittedBy: Id<"users">;
-      submitterName: string;
-      leaks: Array<Id<"leaks">>;
-    }> = [];
-
+    // Batch fetch all unique users at once
+    const userIds = new Set<Id<"users">>();
     for (const request of requests) {
-      const user = await ctx.db.get(request.submittedBy);
-      requestsWithNames.push({
-        ...request,
-        submitterName: user?.name || "Unknown",
-      });
+      userIds.add(request.submittedBy);
     }
+
+    const userMap = new Map<Id<"users">, string>();
+    await Promise.all(
+      Array.from(userIds).map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        userMap.set(userId, user?.name || "Unknown");
+      }),
+    );
+
+    const requestsWithNames = requests.map((request) => ({
+      ...request,
+      submitterName: userMap.get(request.submittedBy) || "Unknown",
+    }));
 
     return requestsWithNames;
   },
@@ -344,6 +345,8 @@ export const searchRequests = query({
  * - Number of leak confirmations
  * - Number of unique submitters
  * - Submitter name
+ *
+ * OPTIMIZATION: Uses batch fetching for both users and leaks to avoid N+1 queries.
  */
 export const getRequestsWithVerificationStatus = query({
   args: {},
@@ -377,40 +380,61 @@ export const getRequestsWithVerificationStatus = query({
       .order("desc")
       .collect();
 
-    const requestsWithStatus: Array<{
-      _id: Id<"requests">;
-      _creationTime: number;
-      targetName: string;
-      provider: string;
-      targetType: "model" | "app" | "tool" | "agent" | "plugin" | "custom";
-      targetUrl: string;
-      closed: boolean;
-      submittedBy: Id<"users">;
-      submitterName: string;
-      leaks: Array<Id<"leaks">>;
-      confirmationCount: number;
-      uniqueSubmitters: number;
-    }> = [];
+    // Collect all unique user IDs and leak IDs to batch fetch
+    const userIds = new Set<Id<"users">>();
+    const leakIds = new Set<Id<"leaks">>();
 
     for (const request of requests) {
-      const user = await ctx.db.get(request.submittedBy);
+      userIds.add(request.submittedBy);
+      for (const leakId of request.leaks) {
+        leakIds.add(leakId);
+      }
+    }
 
-      // Calculate unique submitters
+    // Batch fetch all users and leaks in parallel
+    const [userMap, leakMap] = await Promise.all([
+      // Fetch all users
+      (async () => {
+        const map = new Map<Id<"users">, string>();
+        await Promise.all(
+          Array.from(userIds).map(async (userId) => {
+            const user = await ctx.db.get(userId);
+            map.set(userId, user?.name || "Unknown");
+          }),
+        );
+        return map;
+      })(),
+      // Fetch all leaks
+      (async () => {
+        const map = new Map<Id<"leaks">, Id<"users"> | undefined>();
+        await Promise.all(
+          Array.from(leakIds).map(async (leakId) => {
+            const leak = await ctx.db.get(leakId);
+            map.set(leakId, leak?.submittedBy);
+          }),
+        );
+        return map;
+      })(),
+    ]);
+
+    // Map requests with pre-fetched data
+    const requestsWithStatus = requests.map((request) => {
+      // Calculate unique submitters from cached leak data
       const submitters = new Set<Id<"users">>();
       for (const leakId of request.leaks) {
-        const leak = await ctx.db.get(leakId);
-        if (leak && leak.submittedBy) {
-          submitters.add(leak.submittedBy);
+        const submittedBy = leakMap.get(leakId);
+        if (submittedBy) {
+          submitters.add(submittedBy);
         }
       }
 
-      requestsWithStatus.push({
+      return {
         ...request,
-        submitterName: user?.name || "Unknown",
+        submitterName: userMap.get(request.submittedBy) || "Unknown",
         confirmationCount: request.leaks.length,
         uniqueSubmitters: submitters.size,
-      });
-    }
+      };
+    });
 
     return requestsWithStatus;
   },

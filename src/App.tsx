@@ -1,6 +1,6 @@
 "use client";
 
-import { Authenticated, Unauthenticated, useConvexAuth } from "convex/react";
+import { Authenticated, Unauthenticated } from "convex/react";
 import { useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import { Navbar } from "./components/navbar";
 import Leaderboard from "./pages/Leaderboard";
@@ -11,20 +11,21 @@ import { LeakLibrary } from "./components/leakLibrary";
 import { SubmitLeakForm } from "./components/submitLeakForm";
 import Dashboard from "./pages/Dashboard";
 
+/**
+ * Main App component.
+ *
+ * OPTIMIZATION: Removed the blocking auth loading pattern.
+ * Previously, the entire app would wait for authentication to complete before
+ * rendering anything, causing the "stuck" feeling on cold starts.
+ *
+ * Now, the app renders immediately and components handle their own loading states.
+ * The Authenticated/Unauthenticated components will automatically show/hide content
+ * based on auth state without blocking the entire UI.
+ */
 export default function App() {
-  const { isLoading } = useConvexAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-
-  // Show only loading spinner during auth initialization
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#0f0f0f]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00ff88]"></div>
-      </div>
-    );
-  }
 
   return (
     <>

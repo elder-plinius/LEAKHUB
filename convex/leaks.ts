@@ -622,6 +622,10 @@ export const insertVerifiedLeak = internalMutation({
  * Get all verified leaks from the database.
  * Returns an array of leak documents that have been fully verified.
  * Includes the names of users who verified each leak.
+ *
+ * OPTIMIZATION: Uses batch fetching to avoid N+1 query problem.
+ * Instead of fetching each user individually, we collect all unique user IDs
+ * and fetch them in one pass, then map the results.
  */
 export const getVerifiedLeaks = query({
   args: {},
@@ -661,55 +665,45 @@ export const getVerifiedLeaks = query({
       .withIndex("by_isFullyVerified", (q) => q.eq("isFullyVerified", true))
       .collect();
 
-    // Fetch submitter and verifier names
-    const leaksWithNames: Array<{
-      _id: Id<"leaks">;
-      _creationTime: number;
-      requiresLogin?: boolean;
-      isPaid?: boolean;
-      hasToolPrompts?: boolean;
-      accessNotes?: string;
-      leakText: string;
-      leakContext?: string;
-      url?: string;
-      targetType: "model" | "app" | "tool" | "agent" | "plugin" | "custom";
-      targetName: string;
-      provider: string;
-      submittedBy?: Id<"users">;
-      verifiedBy?: Array<Id<"users">>;
-      isFullyVerified: boolean;
-      requestId?: Id<"requests">;
-      submitterName?: string;
-      verifierNames?: Array<string>;
-    }> = [];
-
+    // Collect all unique user IDs (submitters + verifiers) to batch fetch
+    const userIds = new Set<Id<"users">>();
     for (const leak of leaks) {
-      let submitterName: string | undefined = undefined;
-      let verifierNames: Array<string> | undefined = undefined;
-
-      // Get submitter name if exists
       if (leak.submittedBy) {
-        const submitter = await ctx.db.get(leak.submittedBy);
-        submitterName = submitter?.name || "Unknown";
+        userIds.add(leak.submittedBy);
       }
-
-      // Get verifier names if exists
-      if (leak.verifiedBy && leak.verifiedBy.length > 0) {
-        verifierNames = [];
+      if (leak.verifiedBy) {
         for (const verifierId of leak.verifiedBy) {
-          const verifier = await ctx.db.get(verifierId);
-          if (verifier) {
-            verifierNames.push(verifier.name);
-          }
+          userIds.add(verifierId);
         }
       }
+    }
 
-      leaksWithNames.push({
+    // Batch fetch all users at once (single pass instead of N+1)
+    const userMap = new Map<Id<"users">, string>();
+    await Promise.all(
+      Array.from(userIds).map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        userMap.set(userId, user?.name || "Unknown");
+      }),
+    );
+
+    // Map leaks to include user names from the cached map
+    const leaksWithNames = leaks.map((leak) => {
+      const submitterName = leak.submittedBy
+        ? userMap.get(leak.submittedBy)
+        : undefined;
+      const verifierNames = leak.verifiedBy
+        ? leak.verifiedBy
+            .map((id) => userMap.get(id))
+            .filter((name): name is string => name !== undefined)
+        : undefined;
+
+      return {
         ...leak,
         submitterName,
         verifierNames,
-      });
-    }
+      };
+    });
 
     return leaksWithNames;
   },
@@ -838,6 +832,8 @@ export const getProviders = query({
 /**
  * Get all verified leaks for a specific provider.
  * Returns an array of leak documents with submitter and verifier names.
+ *
+ * OPTIMIZATION: Uses batch fetching to avoid N+1 query problem.
  */
 export const getLeaksByProvider = query({
   args: {
@@ -880,60 +876,48 @@ export const getLeaksByProvider = query({
       .withIndex("by_provider_and_verified", (q) =>
         q.eq("provider", args.provider).eq("isFullyVerified", true),
       )
+      .order("desc") // Order by creation time directly in query
       .collect();
 
-    // Fetch submitter and verifier names
-    const leaksWithNames: Array<{
-      _id: Id<"leaks">;
-      _creationTime: number;
-      requiresLogin?: boolean;
-      isPaid?: boolean;
-      hasToolPrompts?: boolean;
-      accessNotes?: string;
-      leakText: string;
-      leakContext?: string;
-      url?: string;
-      targetType: "model" | "app" | "tool" | "agent" | "plugin" | "custom";
-      targetName: string;
-      provider: string;
-      submittedBy?: Id<"users">;
-      verifiedBy?: Array<Id<"users">>;
-      isFullyVerified: boolean;
-      requestId?: Id<"requests">;
-      submitterName?: string;
-      verifierNames?: Array<string>;
-    }> = [];
-
+    // Collect all unique user IDs to batch fetch
+    const userIds = new Set<Id<"users">>();
     for (const leak of leaks) {
-      let submitterName: string | undefined = undefined;
-      let verifierNames: Array<string> | undefined = undefined;
-
-      // Get submitter name if exists
       if (leak.submittedBy) {
-        const submitter = await ctx.db.get(leak.submittedBy);
-        submitterName = submitter?.name || "Unknown";
+        userIds.add(leak.submittedBy);
       }
-
-      // Get verifier names if exists
-      if (leak.verifiedBy && leak.verifiedBy.length > 0) {
-        verifierNames = [];
+      if (leak.verifiedBy) {
         for (const verifierId of leak.verifiedBy) {
-          const verifier = await ctx.db.get(verifierId);
-          if (verifier) {
-            verifierNames.push(verifier.name);
-          }
+          userIds.add(verifierId);
         }
       }
+    }
 
-      leaksWithNames.push({
+    // Batch fetch all users at once
+    const userMap = new Map<Id<"users">, string>();
+    await Promise.all(
+      Array.from(userIds).map(async (userId) => {
+        const user = await ctx.db.get(userId);
+        userMap.set(userId, user?.name || "Unknown");
+      }),
+    );
+
+    // Map leaks with user names from the cached map
+    const leaksWithNames = leaks.map((leak) => {
+      const submitterName = leak.submittedBy
+        ? userMap.get(leak.submittedBy)
+        : undefined;
+      const verifierNames = leak.verifiedBy
+        ? leak.verifiedBy
+            .map((id) => userMap.get(id))
+            .filter((name): name is string => name !== undefined)
+        : undefined;
+
+      return {
         ...leak,
         submitterName,
         verifierNames,
-      });
-    }
-
-    // Sort by creation time (newest first)
-    leaksWithNames.sort((a, b) => b._creationTime - a._creationTime);
+      };
+    });
 
     return leaksWithNames;
   },
