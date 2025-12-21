@@ -1,246 +1,232 @@
-# 🚀 LeakHub - AI System Prompt Discovery Platform
+# 🔓 LeakHub
 
-**The community hub for crowd-sourced system prompt leak verification. CL4R1T4S!**
+> The community hub for crowd-sourced system prompt leak verification. **CL4R1T4S!**
 
-## 🌟 What is LeakHub?
+LeakHub is an open-source platform where the community can submit, verify, and browse leaked AI system prompts. The platform uses a consensus-based verification system to ensure authenticity and rewards contributors with a points-based leaderboard.
 
-LeakHub is a revolutionary web platform that enables the community to discover, submit, verify, and analyze AI system prompt leaks. It's designed to promote transparency in AI systems through crowdsourced verification and community-driven discovery.
+---
 
 ## ✨ Features
 
-### 🔍 **Core Functionality**
-- **Submit Leaks**: Submit suspected AI system prompt leaks with detailed metadata
-- **Compare & Verify**: Advanced comparison algorithms to verify authenticity
-- **Community Library**: Browse and search through all submitted leaks
-- **Confidence Scoring**: Automatic confidence assessment based on content analysis
+- **🔍 System Prompt Library** - Browse verified AI system prompts organized by provider
+- **📝 Submit Leaks** - Contribute system prompts for AI models, apps, tools, agents, and plugins
+- **✅ Community Verification** - Leaks require 2 unique users to verify before becoming "verified"
+- **🏆 Leaderboard & Points System** - Earn points for contributions and climb the rankings
+- **🎯 Requests System** - Request specific AI system prompts from the community
+- **🔐 GitHub OAuth** - Secure authentication via GitHub
+- **⚡ Real-time Updates** - Instant updates powered by Convex
 
-### 🎯 **Target Types Supported**
-- 🤖 **AI Models** (GPT-4, Claude, Gemini, etc.)
-- 📱 **Apps/Interfaces** (Cursor, GitHub Copilot, etc.)
-- 🔧 **Tools/Functions** (Code Interpreter, WebPilot, etc.)
-- 🤝 **AI Agents** (AutoGPT, BabyAGI, etc.)
-- 🔌 **Plugins/Extensions** (Browser extensions, IDE plugins, etc.)
-- 🛠️ **Custom GPTs/Bots** (Custom implementations)
+### Points System
 
-### 🏆 **Gamification & Community**
-- **Leaderboard**: Track top contributors and achievements
-- **Daily Challenges**: Compete in daily leak hunting challenges
-- **Achievement System**: Unlock badges for notable contributions
-- **Points System**: Earn points for submissions, verifications, and discoveries
+| Action                                             | Points |
+| -------------------------------------------------- | ------ |
+| Submit a leak that gets verified (first submitter) | +100   |
+| Verify someone else's leak                         | +50    |
+| Create a request that gets verified                | +20    |
 
-### 🎯 **Requests & Bounties**
-- **Community Requests**: Request specific targets for leak hunting
-- **Voting System**: Vote on which targets to prioritize
-- **Bounty System**: Offer points for high-priority discoveries
-- **Trending Requests**: See what the community wants most
+---
 
-### 📊 **Advanced Analytics**
-- **Similarity Metrics**: Character match, word match, structure match, core similarity
-- **Consensus View**: Identify common elements across multiple submissions
-- **Verification Tracking**: Track verification status and confidence levels
-- **Statistics Dashboard**: Real-time platform statistics
+## 🛠️ Tech Stack
+
+### Frontend
+
+- **[React 19](https://react.dev/)** - UI library
+- **[Vite](https://vitejs.dev/)** - Build tool and dev server
+- **[React Router v7](https://reactrouter.com/)** - Client-side routing
+- **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[Radix UI](https://www.radix-ui.com/)** - Accessible component primitives
+- **[Lucide React](https://lucide.dev/)** - Icon library
+
+### Backend
+
+- **[Convex](https://convex.dev/)** - Real-time backend (database, server functions, file storage)
+- **[Convex Auth](https://labs.convex.dev/auth)** - Authentication with GitHub OAuth
+
+### Deployment
+
+- **[Cloudflare Pages](https://pages.cloudflare.com/)** - Edge deployment via Wrangler
+
+---
+
+## 📁 Project Structure
+
+```
+leakhub/
+├── convex/                    # Convex backend
+│   ├── _generated/            # Auto-generated types and API
+│   ├── auth.config.ts         # Auth configuration
+│   ├── auth.ts                # Auth handlers
+│   ├── github.ts              # GitHub API integration
+│   ├── http.ts                # HTTP endpoints
+│   ├── leaderboard.ts         # Leaderboard queries
+│   ├── leaks.ts               # Leak mutations and queries
+│   ├── requests.ts            # Request mutations and queries
+│   ├── schema.ts              # Database schema
+│   └── users.ts               # User mutations and queries
+├── src/                       # React frontend
+│   ├── components/            # Reusable UI components
+│   │   ├── ui/                # Shadcn/Radix UI components
+│   │   ├── leakLibrary.tsx    # Leak browser component
+│   │   ├── navbar.tsx         # Navigation bar
+│   │   └── submitLeakForm.tsx # Leak submission form
+│   ├── pages/                 # Page components
+│   │   ├── Dashboard.tsx      # User dashboard
+│   │   ├── Leaderboard.tsx    # Points leaderboard
+│   │   └── Requests.tsx       # Leak requests page
+│   ├── lib/                   # Utility functions
+│   ├── App.tsx                # Main app component
+│   ├── main.tsx               # Entry point
+│   └── index.css              # Global styles
+├── public/                    # Static assets
+├── dist/                      # Production build output
+├── package.json               # Dependencies and scripts
+├── vite.config.ts             # Vite configuration
+├── tsconfig.json              # TypeScript configuration
+└── wrangler.jsonc             # Cloudflare deployment config
+```
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **For Development**: Node.js 18+ and npm
-- **For Production**: Modern web browser (Chrome, Firefox, Safari, Edge)
-- **For Backend**: Optional - MongoDB, Supabase, or Firebase
 
-### Quick Start (Development)
-```bash
-# Clone the repository
-git clone https://github.com/elder-plinius/LEAKHUB.git
-cd LEAKHUB
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [npm](https://www.npmjs.com/)
+- A [Convex](https://convex.dev/) account
 
-# Install dependencies
-npm install
+### Installation
 
-# Start development server
-npm run dev
+1. **Clone the repository**
 
-# Open http://localhost:3000
-```
+   ```bash
+   git clone https://github.com/yourusername/leakhub.git
+   cd leakhub
+   ```
 
-### Quick Start (Production)
-1. **GitHub Pages**: Push to main branch - auto-deploys!
-2. **Vercel**: `npm i -g vercel && vercel`
-3. **Netlify**: `npm install -g netlify-cli && netlify deploy`
+2. **Install dependencies**
 
-### Local Testing
-```bash
-# Build for production
-npm run build
+   ```bash
+   npm install
+   ```
 
-# Preview production build
-npm run preview
+3. **Set up Convex**
 
-# Serve static files
-npm run serve
-```
+   ```bash
+   npx convex dev
+   ```
 
-### Quick Start Guide
+   This will prompt you to log in and create a new Convex project.
 
-#### 1. **Submit Your First Leak**
-1. Fill in your identifier (username)
-2. Select the target type (AI Model, App, Tool, etc.)
-3. Enter the target name and URL
-4. Paste the suspected system prompt
-5. Add context and access requirements
-6. Submit and earn points!
+4. **Configure GitHub OAuth**
 
-#### 2. **Compare Submissions**
-1. Select two different submissions from the dropdowns
-2. Click "Compare" to analyze similarity
-3. Review the detailed metrics and consensus view
-4. High similarity automatically boosts confidence scores
+   Set up GitHub OAuth credentials in your Convex dashboard and configure the environment variables.
 
-#### 3. **Join the Community**
-1. Click "View Leaderboard" to see top contributors
-2. Check out "Requests & Challenges" for daily missions
-3. Vote on community requests
-4. Track your achievements and progress
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   This runs both the Vite frontend and Convex backend concurrently.
 
-## 🎮 How It Works
+### Available Scripts
 
-### **Submission Process**
-1. **Content Analysis**: Automatic confidence scoring based on prompt patterns
-2. **First Discovery Detection**: Identifies if this is the first submission for a target
-3. **Point Allocation**: Awards points for submissions, discoveries, and verifications
-4. **Metadata Tracking**: Stores access requirements, context, and tool information
-
-### **Verification System**
-1. **Multi-Metric Comparison**: Uses character, word, structure, and core similarity
-2. **Consensus Building**: Identifies common elements across submissions
-3. **Confidence Boosting**: High similarity automatically increases confidence scores
-4. **Verification Milestones**: Tracks when leaks reach verified status
-
-### **Gamification Mechanics**
-- **Base Points**: 10 points per submission
-- **First Discovery**: 100 points + 50 bonus for non-model targets
-- **Tool Prompts**: 30 bonus points for comprehensive submissions
-- **Verification**: 20 points per verification + 50 bonus for reaching verified status
-- **Daily Challenges**: 400-700 points for completing daily missions
-
-## 🎨 Design Features
-
-### **Modern UI/UX**
-- **Cyberpunk Aesthetic**: Dark theme with neon accents and gradients
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile
-- **Smooth Animations**: Floating grid background and interactive elements
-- **Intuitive Navigation**: Clear sections and easy-to-use interface
-
-### **Visual Elements**
-- **Status Indicators**: Real-time statistics and progress tracking
-- **Badge System**: Visual indicators for access requirements and features
-- **Color Coding**: Different colors for different target types and confidence levels
-- **Interactive Elements**: Hover effects, transitions, and feedback
-
-## 🔧 Technical Details
-
-### **Frontend Technologies**
-- **HTML5**: Semantic markup and modern structure
-- **CSS3**: Advanced styling with animations and responsive design
-- **JavaScript (ES6+)**: Full application logic and data management
-- **Vite**: Fast build tool and development server
-- **LocalStorage**: Client-side data persistence with backend fallback
-
-### **Backend & Deployment**
-- **GitHub Actions**: Automated CI/CD pipeline
-- **Vercel/Netlify**: Serverless deployment with functions
-- **Database Abstraction**: Support for localStorage, MongoDB, Supabase, Firebase
-- **API Layer**: RESTful endpoints with CORS support
-
-### **Key Algorithms**
-- **Text Normalization**: Standardized text processing for comparison
-- **Similarity Metrics**: Multiple algorithms for comprehensive analysis
-- **Levenshtein Distance**: String similarity calculation
-- **Phrase Matching**: Sliding window approach for common phrase detection
-
-### **Data Management**
-- **Hybrid Storage**: localStorage with optional backend persistence
-- **JSON Serialization**: Efficient data storage and retrieval
-- **Real-time Updates**: Instant UI updates and statistics
-- **Data Validation**: Input validation and error handling
-- **Export/Import**: Full data backup and restore functionality
-
-## 🎯 Use Cases
-
-### **For Researchers**
-- Document and verify AI system prompts
-- Compare different implementations
-- Track prompt evolution over time
-- Build comprehensive prompt databases
-
-### **For Developers**
-- Understand AI system behaviors
-- Debug prompt-related issues
-- Learn from existing implementations
-- Contribute to AI transparency
-
-### **For Community**
-- Participate in AI transparency efforts
-- Compete in daily challenges
-- Build reputation and achievements
-- Help verify and validate discoveries
-
-## 🤝 Contributing
-
-### **How to Contribute**
-1. **Submit Leaks**: Share discovered system prompts
-2. **Verify Submissions**: Compare and verify existing leaks
-3. **Request Targets**: Suggest new targets for the community
-4. **Vote on Requests**: Help prioritize community goals
-5. **Report Issues**: Help improve the platform
-
-### **Best Practices**
-- **Be Accurate**: Only submit genuine system prompts
-- **Provide Context**: Include how you obtained the prompt
-- **Add Metadata**: Include access requirements and URLs
-- **Verify Others**: Help verify community submissions
-- **Respect Privacy**: Don't submit private or sensitive information
-
-## 🔮 Future Enhancements
-
-### **Planned Features**
-- **Advanced Analytics**: Machine learning-based similarity detection
-- **Mobile App**: Native mobile application
-- **Real-time Collaboration**: Live collaboration features
-- **Advanced Export**: Data export in various formats (CSV, JSON, API)
-- **User Authentication**: Secure user accounts and profiles
-- **Social Features**: Comments, discussions, and community forums
-
-### **Backend Integration**
-- **Database Support**: MongoDB, PostgreSQL, Firebase integration
-- **API Access**: RESTful API for programmatic access
-- **Real-time Updates**: WebSocket support for live updates
-- **Email Notifications**: Automated notifications and alerts
-- **Advanced Security**: JWT authentication and rate limiting
-
-### **Community Features**
-- **User Profiles**: Detailed user profiles and statistics
-- **Discussion Forums**: Community discussions and analysis
-- **Expert Verification**: Expert review system
-- **Bounty Marketplace**: Advanced bounty and reward system
-- **Achievement System**: Expanded badges and rewards
-
-## 📄 License
-
-This project is open source and available under the MIT License. See the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **AI Research Community**: For inspiration and feedback
-- **Open Source Contributors**: For tools and libraries used
-- **Early Testers**: For valuable feedback and suggestions
-- **CL4R1T4S Community**: For the vision of AI transparency
-
-## 📞 Support
-
-- **Issues**: Report bugs and feature requests via GitHub issues
-- **Discussions**: Join community discussions
-- **Documentation**: Check the inline documentation and comments
+| Script                 | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| `npm run dev`          | Start frontend and backend in development mode |
+| `npm run dev:frontend` | Start only the Vite dev server                 |
+| `npm run dev:backend`  | Start only the Convex dev server               |
+| `npm run build`        | Build for production                           |
+| `npm run preview`      | Preview production build locally               |
+| `npm run deploy`       | Build and deploy to Cloudflare Pages           |
+| `npm run lint`         | Run TypeScript and ESLint checks               |
 
 ---
 
-**Ready to start hunting for AI system prompts? Open `index.html` and join the LeakHub community! 🚀**
+## 🗄️ Database Schema
+
+### Tables
+
+#### `leaks`
+
+Stores system prompt leaks with verification status.
+
+| Field             | Type           | Description                                   |
+| ----------------- | -------------- | --------------------------------------------- |
+| `targetName`      | `string`       | Name of the AI system                         |
+| `provider`        | `string`       | Provider/company name                         |
+| `targetType`      | `enum`         | Type: model, app, tool, agent, plugin, custom |
+| `leakText`        | `string`       | The actual system prompt                      |
+| `leakContext`     | `string?`      | Additional context                            |
+| `url`             | `string?`      | Source URL                                    |
+| `isFullyVerified` | `boolean`      | Verification status                           |
+| `submittedBy`     | `Id<users>?`   | Submitter reference                           |
+| `verifiedBy`      | `Id<users>[]?` | Verifiers references                          |
+| `requiresLogin`   | `boolean?`     | Access requirements                           |
+| `isPaid`          | `boolean?`     | Paid service flag                             |
+| `hasToolPrompts`  | `boolean?`     | Has tool/function prompts                     |
+
+#### `requests`
+
+Stores community requests for specific system prompts.
+
+| Field         | Type          | Description                                   |
+| ------------- | ------------- | --------------------------------------------- |
+| `targetName`  | `string`      | Requested AI system name                      |
+| `provider`    | `string`      | Provider/company name                         |
+| `targetType`  | `enum`        | Type: model, app, tool, agent, plugin, custom |
+| `targetUrl`   | `string`      | URL to the target                             |
+| `closed`      | `boolean`     | Whether request is fulfilled                  |
+| `leaks`       | `Id<leaks>[]` | Associated leak submissions                   |
+| `submittedBy` | `Id<users>`   | Requester reference                           |
+
+#### `users`
+
+User profiles with points tracking.
+
+| Field      | Type              | Description         |
+| ---------- | ----------------- | ------------------- |
+| `name`     | `string`          | Display name        |
+| `image`    | `string`          | Profile picture URL |
+| `email`    | `string`          | Email address       |
+| `points`   | `number`          | Accumulated points  |
+| `leaks`    | `Id<leaks>[]?`    | Submitted leaks     |
+| `requests` | `Id<requests>[]?` | Created requests    |
+
+---
+
+## 🔒 Verification Algorithm
+
+LeakHub uses a consensus-based verification system:
+
+1. **Submission** - Users submit leaks linked to requests
+2. **Similarity Detection** - Text similarity is calculated using:
+   - Shingle-based cosine similarity (fast filter)
+   - Levenshtein distance (precise matching)
+3. **Consensus** - When 2+ unique users submit similar content (≥85% similarity), the leak is verified
+4. **Rewards** - Points are distributed to submitter, verifiers, and request creator
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0** - see the [LICENSE.txt](LICENSE.txt) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built with [Convex](https://convex.dev/) - The fullstack TypeScript development platform
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+- Icons from [Lucide](https://lucide.dev/)
