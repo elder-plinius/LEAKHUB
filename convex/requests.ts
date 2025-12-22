@@ -3,6 +3,13 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 
+// url validation helper
+function isValidUrl(url: string): boolean {
+  return /^https?:\/\/.+/i.test(url); // only http and https
+}
+
+
+
 /**
  * Get all open (non-closed) requests from the database.
  * Returns requests with submitter names populated.
@@ -104,6 +111,7 @@ export const getUserOpenRequests = query({
   },
 });
 
+
 /**
  * Create a new request for a leak target.
  * Validates that:
@@ -144,6 +152,13 @@ export const createRequest = mutation({
       return {
         success: false as const,
         error: "You must be logged in to create a request",
+      };
+    }
+
+    if (!isValidUrl(args.targetUrl)) {
+      return {
+        success: false as const,
+        error: "The provided target URL is not valid. Please provide a valid URL starting with http:// or https://",
       };
     }
 
