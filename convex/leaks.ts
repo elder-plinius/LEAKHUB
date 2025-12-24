@@ -544,6 +544,7 @@ export const applyConsensusResult = internalMutation({
 
     await ctx.db.patch(args.requestId, {
       closed: true,
+      closedBy: "verification",
     });
 
     const submitter = await ctx.db.get(leak.submittedBy);

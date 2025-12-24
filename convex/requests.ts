@@ -1,14 +1,12 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 
 // url validation helper
 function isValidUrl(url: string): boolean {
   return /^https?:\/\/.+/i.test(url); // only http and https
 }
-
-
 
 /**
  * Get all open (non-closed) requests from the database.
@@ -279,6 +277,7 @@ export const closeRequest = mutation({
     // Close the request
     await ctx.db.patch(args.requestId, {
       closed: true,
+      closedBy: "user",
     });
 
     return { success: true as const };
@@ -452,5 +451,43 @@ export const getRequestsWithVerificationStatus = query({
     });
 
     return requestsWithStatus;
+  },
+});
+
+/*
+ Delete closed requests after a day --> internal mutation called by a cron job
+*/
+
+export const deleteOldClosedRequests = internalMutation({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+
+    //const daysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+    const daysAgo = Date.now() - 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
+    const oldClosedRequests = await ctx.db
+      .query("requests")
+      .withIndex("by_closed", (q) => q.eq("closed", true))
+      .collect();
+
+    let deletedCount = 0;
+
+    for (const request of oldClosedRequests) {
+      if (request._creationTime < daysAgo && request.closedBy === "user") {
+        // remove from users array of requests 
+        if (request.submittedBy) {
+          const user = await ctx.db.get(request.submittedBy);
+          if (user && user.requests) {
+            await ctx.db.patch(request.submittedBy, {
+              requests: user.requests.filter((id) => id !== request._id),
+            });
+          }
+        }
+        await ctx.db.delete(request._id);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
   },
 });
