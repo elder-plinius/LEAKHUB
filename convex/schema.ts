@@ -43,6 +43,7 @@ const requests = defineTable({
   ),
   targetUrl: v.string(),
   closed: v.boolean(),
+  closedBy: v.optional(v.union(v.literal("user"), v.literal("verification"))),
   leaks: v.array(v.id("leaks")),
   submittedBy: v.id("users"),
 })

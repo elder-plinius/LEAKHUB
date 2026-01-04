@@ -236,6 +236,13 @@ export const insertLeak = mutation({
       };
     }
 
+    if (args.url && !/^https?:\/\/.+/i.test(args.url)) {
+      return {
+        success: false as const,
+        error: "Invalid URL.",
+      };
+    }
+
     // Validate required fields
     if (!args.targetName || !args.provider || !args.leakText) {
       return {
@@ -537,6 +544,7 @@ export const applyConsensusResult = internalMutation({
 
     await ctx.db.patch(args.requestId, {
       closed: true,
+      closedBy: "verification",
     });
 
     const submitter = await ctx.db.get(leak.submittedBy);
