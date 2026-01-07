@@ -10,9 +10,15 @@
   },
   // Required compatibility date for Workers runtime features
   "compatibility_date": "2025-06-05",
+  // Route all traffic from leakhub.ai to this Worker
+  // The wildcard (*) at the end matches all paths (/, /dashboard, /browse, etc.)
   "routes": [
     {
-      "pattern": "**",
+      "pattern": "leakhub.ai/*",
+      "zone_name": "leakhub.ai",
+    },
+    {
+      "pattern": "www.leakhub.ai/*",
       "zone_name": "leakhub.ai",
     },
   ],
