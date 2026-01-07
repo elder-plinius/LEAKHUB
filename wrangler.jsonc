@@ -10,4 +10,10 @@
   },
   // Required compatibility date for Workers runtime features
   "compatibility_date": "2025-06-05",
+  "routes": [
+    {
+      "pattern": "**",
+      "zone_name": "leakhub.ai",
+    },
+  ],
 }
