@@ -5,10 +5,12 @@ import {
   internalMutation,
   internalQuery,
   mutation,
+  MutationCtx,
   query,
 } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { Doc } from "./_generated/dataModel";
 
 /**
  * Helper function to normalize text for comparison.
@@ -930,3 +932,184 @@ export const getLeaksByProvider = query({
     return leaksWithNames;
   },
 });
+
+/***
+ * get all leaks submitted by the logged-in user
+ * 
+ */
+
+export const getUserSubmittedLeaks = query({
+  args: {},
+
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    
+    const user = await ctx.db.get(userId);
+    if (!user?.leaks) return [];
+    
+    const userLeaks = [];
+    for (const leakId of user.leaks) {
+      const leak = await ctx.db.get(leakId);
+      if (!leak) continue;
+      
+      // get linked request info
+      let requestInfo = null;
+      if (leak.requestId) {
+        const request = await ctx.db.get(leak.requestId);
+        if (request) {
+          requestInfo = {
+            targetName: request.targetName,
+            closed: request.closed,
+            totalSubmissions: request.leaks.length
+          };
+        }
+      }
+      
+      userLeaks.push({
+        ...leak,
+        requestInfo
+      });
+    }
+    
+    return userLeaks;
+  }
+});
+
+/**
+ * validates that a user can modify a leak ( used for update and withdraw )
+ */
+async function validateLeakModification(
+  ctx: MutationCtx,
+  leakId: Id<"leaks">,
+  userId: Id<"users"> | null
+): Promise<
+  | { success: true; leak: Doc<"leaks"> }
+  | { success: false; error: string }
+> {
+  if (!userId) {
+    return { success: false, error: "auth required" };
+  }
+
+  const leak = await ctx.db.get(leakId);
+  if (!leak) {
+    return { success: false, error: "leak not found" };
+  }
+
+  if (leak.submittedBy !== userId) {
+    return { success: false, error: "owner and updater mismatch" };
+  }
+
+  if (leak.isFullyVerified) {
+    return { success: false, error: "leak already verified" };
+  }
+
+  return { success: true, leak };
+}
+
+
+
+/***
+ * update a leak submitted by the logged-in user
+ * retry verification concencus IF update sucessful
+ */
+export const updateLeak = mutation({
+  args: {
+    leakId: v.id("leaks"),
+    leakText: v.string(),
+    leakContext: v.optional(v.string()),
+    url: v.optional(v.string()),
+    requiresLogin: v.optional(v.boolean()),
+    isPaid: v.optional(v.boolean()),
+    hasToolPrompts: v.optional(v.boolean()),
+    accessNotes: v.optional(v.string()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const validation = await validateLeakModification(ctx, args.leakId, userId);
+    
+    if (!validation.success) {
+      return validation;
+    }
+    
+    const leak = validation.leak;
+    
+    await ctx.db.patch(args.leakId, {
+      leakText: args.leakText,
+      leakContext: args.leakContext,
+      url: args.url,
+      requiresLogin: args.requiresLogin,
+      isPaid: args.isPaid,
+      hasToolPrompts: args.hasToolPrompts,
+      accessNotes: args.accessNotes,
+    });
+    
+    // retry consensus check
+    if (leak.requestId) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.leaks.processRequestConsensus,
+        { requestId: leak.requestId }
+      );
+    }
+    
+    return { success: true };
+  }
+});
+
+/***
+ * withdraw a leak submitted by the logged-in user
+ */
+export const withdrawLeak = mutation({
+  args: {
+    leakId: v.id("leaks"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const validation = await validateLeakModification(ctx, args.leakId, userId);
+    
+    if (!validation.success) {
+      return validation;
+    }
+    
+    const leak = validation.leak;
+    const requestId = leak.requestId;
+    
+
+    // redundant check, but need it to satisfy TS
+    if (!userId) {
+      return { success: false, error: "auth required" };
+    }
+
+    // remove from each array
+    const user = await ctx.db.get(userId);
+    if (user?.leaks) {
+      await ctx.db.patch(userId, {
+        leaks: user.leaks.filter(id => id !== args.leakId)
+      });
+    }
+
+    if (requestId) {
+      const request = await ctx.db.get(requestId);
+      if (request) {
+        await ctx.db.patch(requestId, {
+          leaks: request.leaks.filter(id => id !== args.leakId)
+        });
+      }
+    }
+    
+    // delete the leak
+    await ctx.db.delete(args.leakId);
+    
+    return { success: true };
+  }
+});
+
